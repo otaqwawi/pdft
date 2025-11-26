@@ -407,26 +407,97 @@ func (p *PDFData) injectContentToPDF(contenters *[]Contenter) error {
 
 	var err error
 	pageBuffs := make(map[int]*bytes.Buffer)
+	pageLinkBuffs := make(map[int]*bytes.Buffer) // Separate buffer for link annotations
+
 	for _, ctn := range *contenters {
 		pageNum := ctn.page()
-		if _, ok := pageBuffs[pageNum]; !ok {
-			pageBuffs[pageNum] = new(bytes.Buffer)
-		}
-		var buff *bytes.Buffer
-		buff, err = ctn.toSteram()
-		if err != nil {
-			return err
+
+		// Check if this is a link annotation
+		isLink := false
+		if _, ok := ctn.(*ContentExternalLink); ok {
+			isLink = true
+		} else if _, ok := ctn.(*ContentInternalLink); ok {
+			isLink = true
 		}
 
-		//fmt.Printf("buff=%s\n\n", buff.String())
-
-		_, err = buff.WriteTo(pageBuffs[pageNum])
-		if err != nil {
-			return err
+		if isLink {
+			// Handle link annotations separately
+			if _, ok := pageLinkBuffs[pageNum]; !ok {
+				pageLinkBuffs[pageNum] = new(bytes.Buffer)
+			}
+			var buff *bytes.Buffer
+			buff, err = ctn.toSteram()
+			if err != nil {
+				return err
+			}
+			_, err = buff.WriteTo(pageLinkBuffs[pageNum])
+			if err != nil {
+				return err
+			}
+		} else {
+			// Handle regular content (text, images, etc.)
+			if _, ok := pageBuffs[pageNum]; !ok {
+				pageBuffs[pageNum] = new(bytes.Buffer)
+			}
+			var buff *bytes.Buffer
+			buff, err = ctn.toSteram()
+			if err != nil {
+				return err
+			}
+			_, err = buff.WriteTo(pageBuffs[pageNum])
+			if err != nil {
+				return err
+			}
 		}
 	}
+
 	pageObjIDs, _ := p.getPageObjIDs()
 	objMustReplaces := make(map[int]string)
+
+	// Inject link annotations into page objects
+	for pageIndex, pageObjID := range pageObjIDs {
+		if linkBuff, ok := pageLinkBuffs[pageIndex+1]; ok && linkBuff.Len() > 0 {
+			// Get page object
+			pageObj := p.getObjByID(pageObjID)
+			pageProps, err := pageObj.readProperties()
+			if err != nil {
+				return err
+			}
+
+			// Check if /Annots already exists
+			annotsProp := pageProps.getPropByKey("Annots")
+			var annotsContent string
+			if annotsProp != nil {
+				// Append to existing annotations
+				annotsContent = strings.TrimSpace(annotsProp.rawVal)
+				// Remove closing bracket
+				if strings.HasSuffix(annotsContent, "]") {
+					annotsContent = annotsContent[:len(annotsContent)-1]
+				}
+				annotsContent += " " + linkBuff.String() + "]"
+				annotsProp.setRaw(annotsContent)
+			} else {
+				// Create new /Annots property
+				annotsContent = "[ " + linkBuff.String() + "]"
+				newProp := PDFObjPropertyData{
+					key:    "Annots",
+					rawVal: annotsContent,
+				}
+				pageProps.append(newProp)
+			}
+
+			// Rebuild page object data
+			var pageObjBuff bytes.Buffer
+			pageObjBuff.WriteString("<<\n")
+			for _, prop := range *pageProps {
+				pageObjBuff.WriteString(fmt.Sprintf("/%s %s\n", prop.key, prop.rawVal))
+			}
+			pageObjBuff.WriteString(">>\n")
+			objMustReplaces[pageObjID] = pageObjBuff.String()
+		}
+	}
+
+	// Inject regular content into content streams
 	for pageIndex, pageObjID := range pageObjIDs {
 
 		var cw2Content crawl

@@ -479,6 +479,50 @@ func (i *PDFt) insertContenters(index int, src Contenter) {
 	i.contenters[index] = src
 }*/
 
+// AddExternalLink add external link (hyperlink) to PDF
+// url: target URL
+// pageNum: page number (1-indexed)
+// x, y: position (upper-left corner)
+// w, h: width and height of clickable area
+func (i *PDFt) AddExternalLink(url string, pageNum int, x, y, w, h float64) error {
+	var link ContentExternalLink
+	link.url = url
+	link.pageNum = pageNum
+	link.x = x
+	link.y = y
+	link.w = w
+	link.h = h
+	link.pageHeight = i.pageHeight(pageNum)
+	i.contenters = append(i.contenters, &link)
+	return nil
+}
+
+// AddInternalLink add internal link to another page in the same PDF
+// targetPage: target page number to jump to (1-indexed)
+// pageNum: current page number where link is placed (1-indexed)
+// x, y: position (upper-left corner)
+// w, h: width and height of clickable area
+func (i *PDFt) AddInternalLink(targetPage, pageNum int, x, y, w, h float64) error {
+	pageObjIDs, err := i.pdf.getPageObjIDs()
+	if err != nil {
+		return err
+	}
+	if targetPage < 1 || targetPage > len(pageObjIDs) {
+		return errors.New("target page out of range")
+	}
+
+	var link ContentInternalLink
+	link.targetPage = pageObjIDs[targetPage-1] // Convert to page object ID
+	link.pageNum = pageNum
+	link.x = x
+	link.y = y
+	link.w = w
+	link.h = h
+	link.pageHeight = i.pageHeight(pageNum)
+	i.contenters = append(i.contenters, &link)
+	return nil
+}
+
 // AddFont add ttf font
 func (i *PDFt) AddFont(name string, ttfpath string) error {
 

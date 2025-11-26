@@ -62,6 +62,18 @@ if err != nil {
 	panic("Couldn't insert image")
 }
 
+// add external link (hyperlink)
+err = pt.AddExternalLink("https://www.google.com", 1, 50.0, 100.0, 150.0, 30.0)
+if err != nil {
+	panic("Couldn't add external link")
+}
+
+// add internal link (jump to another page)
+err = pt.AddInternalLink(2, 1, 50.0, 150.0, 150.0, 30.0)
+if err != nil {
+	panic("Couldn't add internal link")
+}
+
 // Duplicate first page to last page
 err = pt.DuplicatePageAfter(1, -1)
 if err != nil {
@@ -78,6 +90,18 @@ err = pt.Save(target)
 if err != nil {
 	panic("Couldn't save pdf.")
 }
+```
+
+### Add Links
+
+```go
+// Add external link (hyperlink to URL)
+// Parameters: url, pageNum, x, y, width, height
+err = pt.AddExternalLink("https://www.example.com", 1, 50.0, 100.0, 200.0, 30.0)
+
+// Add internal link (jump to another page in the same PDF)
+// Parameters: targetPage, pageNum, x, y, width, height
+err = pt.AddInternalLink(2, 1, 50.0, 150.0, 200.0, 30.0)
 ```
 
 
