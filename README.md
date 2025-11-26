@@ -7,7 +7,7 @@ This library depend on [gopdf](https://github.com/otaqwawi/gopdf).
 Tested with PDF template files created from Libre office, Google Docs, Microsoft Word.
 
  
-### SAMPLE
+### SAMPLE 
 ```go
 var pt pdft.PDFt
 err := pt.Open(pdfsource)
