@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/signintech/pdft/minigopdf/fontmaker/core"
+	"github.com/otaqwawi/pdft/minigopdf/fontmaker/core"
 	//"runtime/debug"
 )
 

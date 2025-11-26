@@ -2,7 +2,7 @@ PDFT
 ====
 
 PDFT is a GO library for creating PDF documents using existing PDFs as template.
-This library depend on [gopdf](https://github.com/signintech/gopdf). 
+This library depend on [gopdf](https://github.com/otaqwawi/gopdf). 
 
 Tested with PDF template files created from Libre office, Google Docs, Microsoft Word.
 

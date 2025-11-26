@@ -3,7 +3,7 @@ package pdft
 import (
 	"testing"
 
-	gopdf "github.com/signintech/pdft/minigopdf"
+	gopdf "github.com/otaqwawi/pdft/minigopdf"
 )
 
 func TestAddExternalLink(t *testing.T) {
